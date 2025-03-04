@@ -6,7 +6,7 @@ app.use(express.json());
 app.use("/api/v1/categories", require("./routes/categories-route"));
 app.use("/api/v1/sub-categories", require("./routes/subcategories-route"));
 app.get("/", (req, res) => {
-  res.send("Developed by: ~kylemastercoder~");
+  res.send("Developed by: kylemastercoder");
 });
 
 app.listen(6969, () => {

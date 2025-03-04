@@ -1,0 +1,492 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+// CUSTOMER SCHEMA
+model User {
+  id                    String                 @id @default(cuid())
+  name                  String?
+  email                 String                 @unique
+  password              String?
+  emailVerified         DateTime?
+  image                 String?
+  isTwoFactorEnabled    Boolean                @default(false)
+  twoFactorConfirmation TwoFactorConfirmation?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  account          Account[]
+  feedback         Feedback[]
+  reportSuspicious ReportSuspicious[]
+  reviews          Reviews[]
+  order            Order[]
+  address          Address[]
+}
+
+model Address {
+  id            String  @id @default(cuid())
+  firstName     String
+  lastName      String
+  contactNumber String
+  homeAddress   String
+  barangay      String
+  city          String
+  province      String
+  region        String
+  zipCode       String
+  isDefault     Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  order  Order[]
+
+  @@index([userId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([email, token])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([email, token])
+}
+
+model TwoFactorToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([email, token])
+}
+
+model TwoFactorConfirmation {
+  id     String @id @default(cuid())
+  userId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  rating    String
+  comment   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model ReportSuspicious {
+  id                  String   @id @default(cuid())
+  howWereYouContacted String?
+  suspiciousLink      String?
+  suspiciousEmail     String?
+  submitPersonalInfo  String[]
+  platformSuspicious  String?
+  lostOfAsset         String?
+  description         String?
+  screenShot          String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Reviews {
+  id        String   @id @default(cuid())
+  rating    String
+  comment   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   SellerProduct @relation(fields: [productId], references: [slug], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([productId])
+}
+
+model Order {
+  id            String   @id @default(cuid())
+  orderNumber   String   @unique
+  status        String   @default("Pending")
+  paymentStatus String   @default("Pending")
+  paymentMethod String
+  totalAmount   Float
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  addressId String
+  address   Address @relation(fields: [addressId], references: [id], onDelete: Cascade)
+
+  orderItem OrderItem[]
+
+  @@index([userId])
+  @@index([addressId])
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  quantity  Int
+  price     Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   SellerProduct @relation(fields: [productId], references: [slug], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+// SELLER SCHEMA
+
+enum BusinessType {
+  Food
+  NonFood
+  Service
+}
+
+model Seller {
+  id                     String        @id @default(cuid())
+  name                   String?
+  email                  String
+  image                  String?
+  password               String?
+  type                   String?
+  dti                    String?
+  bir                    String?
+  barangayBusinessPermit String?
+  identity               String?
+  identityType           String?
+  sec                    String?
+  givenName              String?
+  middleName             String?
+  familyName             String?
+  otpCode                String?
+  isPremium              Boolean       @default(false)
+  businessType           BusinessType? @default(Food)
+  status                 String        @default("Pending")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  categorySlug      String?
+  category          Category?           @relation(fields: [categorySlug], references: [slug], onDelete: Cascade)
+  sellerAddress     SellerAddress[]
+  sellerProduct     SellerProduct[]
+  adminNotification AdminNotification[]
+  sellerDiscount    SellerDiscount[]
+  sellerCoupon      SellerCoupon[]
+  sellerBank        SellerBank[]
+  sellerPolicies    SellerPolicies[]
+
+  @@index([categorySlug])
+}
+
+model SellerAddress {
+  id                 String   @id @default(cuid())
+  residentialAddress String?
+  contactPerson      String?
+  contactNumber      String?
+  nationality        String?
+  isReturnAddress    Boolean? @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  sellerId String
+  seller   Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  seller            Seller[]
+  sellerSubCategory SubCategory[]
+}
+
+model SubCategory {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  categorySlug String
+  category     Category @relation(fields: [categorySlug], references: [slug], onDelete: Cascade)
+
+  @@index([categorySlug])
+}
+
+model SellerProduct {
+  id                  String   @id @default(cuid())
+  slug                String   @unique
+  name                String
+  description         String
+  category            String
+  images              String[]
+  video               String?
+  brand               String?
+  materials           String[]
+  weight              Float?
+  height              Float?
+  price               Float?
+  sku                 String
+  tags                String[]
+  warrantyPeriod      String?
+  warrantyPolicy      String?
+  status              String   @default("In stock")
+  adminApprovalStatus String   @default("Pending")
+  isVariant           Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  sellerId String
+  seller   Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  sellerProductVariants SellerProductVariants[]
+
+  discountId String?
+  discount   SellerDiscount? @relation(fields: [discountId], references: [id], onDelete: Cascade)
+  reviews    Reviews[]
+  orderItem  OrderItem[]
+
+  @@index([sellerId])
+  @@index([discountId])
+}
+
+model SellerProductVariants {
+  id        String   @id @default(cuid())
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sellerProductSlug String
+  sellerProduct     SellerProduct @relation(fields: [sellerProductSlug], references: [slug], onDelete: Cascade)
+
+  sellerProductVariantsOptions SellerProductVariantsOptions[]
+
+  @@index([sellerProductSlug])
+}
+
+model SellerProductVariantsOptions {
+  id        String   @id @default(cuid())
+  name      String
+  image     String?
+  price     Float?
+  stock     Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sellerProductVariantsId String
+  sellerProductVariants   SellerProductVariants @relation(fields: [sellerProductVariantsId], references: [id], onDelete: Cascade)
+
+  @@index([sellerProductVariantsId])
+}
+
+model SellerDiscount {
+  id        String   @id @default(cuid())
+  discount  String
+  startDate String
+  endDate   String
+  type      String
+  value     Float
+  status    String   @default("Active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sellerId String
+  seller   Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  products SellerProduct[]
+
+  @@index([sellerId])
+}
+
+model SellerCoupon {
+  id                String   @id @default(cuid())
+  channel           String[]
+  name              String
+  startDate         DateTime
+  endDate           DateTime
+  type              String
+  discountAmount    Float?
+  minimumSpend      Float?
+  claimableQuantity Int
+  status            String   @default("Active")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  sellerId String
+  seller   Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
+}
+
+enum PaymentType {
+  Bank
+  EWallet
+}
+
+model SellerBank {
+  id           String      @id @default(cuid())
+  name         String?
+  type         PaymentType
+  cardNumber   String?
+  validThru    String?
+  cvc          String?
+  firstName    String?
+  lastName     String?
+  emailAddress String?
+  mobileNumber String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  sellerId String
+  seller   Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
+}
+
+model SellerPolicies {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  status    String   @default("Pending")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sellerId String
+  seller   Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
+}
+
+// ADMIN SCHEMA
+
+model Admin {
+  id        String   @id @default(cuid())
+  email     String
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AdminSettings {
+  id              String   @id @default(cuid())
+  logo            String?
+  brandName       String?
+  commision       Float?
+  description     String?
+  dateEstablished String?
+  contactNumber   String?
+  address         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model AdminPolicies {
+  id                   String   @id @default(cuid())
+  terms                String?
+  privacy              String?
+  refund               String?
+  intellectualProperty String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model AdminNotification {
+  id        String   @id @default(cuid())
+  type      String
+  title     String
+  message   String
+  status    String   @default("Unread")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sellerId String
+  seller   Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
+}

@@ -71,13 +71,43 @@ exports.getProductBySlug = async (req, res) => {
   }
 };
 
+exports.getProductBySubCategorySlug = async (req, res) => {
+  try {
+    const { subCategorySlug } = req.params;
+
+    const product = await prisma.sellerProduct.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
+      where: {
+        subCategoryId: subCategorySlug,
+      },
+      include: {
+        sellerProductVariants: {
+          include: {
+            sellerProductVariantsOptions: true,
+          },
+        },
+      },
+    });
+
+    return res.status(200).json(product);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 exports.getProductByCategorySlug = async (req, res) => {
   try {
     const { categorySlug } = req.params;
 
-    const product = await prisma.sellerProduct.findUnique({
+    const product = await prisma.sellerProduct.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
       where: {
-        category: categorySlug,
+        categoryId: categorySlug,
       },
       include: {
         sellerProductVariants: {

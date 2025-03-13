@@ -5,6 +5,7 @@ app.use(express.json());
 
 app.use("/api/v1/categories", require("./routes/categories-route"));
 app.use("/api/v1/sub-categories", require("./routes/subcategories-route"));
+app.use("/api/v1/products", require("./routes/products-route"));
 app.get("/", (req, res) => {
   res.send("Developed by: kylemastercoder");
 });

@@ -1,6 +1,67 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
+exports.createProduct = async (req, res) => {
+  try {
+    const {
+      name,
+      slug,
+      description,
+      price,
+      categoryId,
+      subCategoryId,
+      image,
+      images, // Array of additional images
+      brand,
+      materials, // Array of materials
+      weight,
+      height,
+      sku,
+      tags, // Array of tags
+      warrantyPeriod,
+      warrantyPolicy,
+      status,
+      sellerId,
+      adminApprovalStatus,
+      isVariant,
+    } = req.body;
+
+    if (!name || !slug || !categoryId || !sellerId) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const newProduct = await prisma.sellerProduct.create({
+      data: {
+        name,
+        slug,
+        description,
+        price,
+        categoryId,
+        subCategoryId,
+        image,
+        images,
+        brand,
+        materials,
+        weight,
+        height,
+        sku,
+        tags,
+        warrantyPeriod,
+        warrantyPolicy,
+        status,
+        sellerId,
+        adminApprovalStatus,
+        isVariant,
+      },
+    });
+
+    return res.status(201).json(newProduct);
+  } catch (error) {
+    console.error("Error creating product:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 exports.getAllProducts = async (req, res) => {
   try {
     const products = await prisma.sellerProduct.findMany({

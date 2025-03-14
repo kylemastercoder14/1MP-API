@@ -8,16 +8,16 @@ exports.createProduct = async (req, res) => {
       slug,
       description,
       price,
-      categoryId,
-      subCategoryId,
+      categoryId, // This is the category slug
+      subCategoryId, // This is the subcategory slug
       image,
-      images, // Array of additional images
+      images,
       brand,
-      materials, // Array of materials
+      materials,
       weight,
       height,
       sku,
-      tags, // Array of tags
+      tags,
       warrantyPeriod,
       warrantyPolicy,
       status,
@@ -65,43 +65,20 @@ exports.createProduct = async (req, res) => {
 exports.getAllProducts = async (req, res) => {
   try {
     const products = await prisma.sellerProduct.findMany({
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy: { createdAt: "desc" },
       include: {
         sellerProductVariants: {
           include: {
             sellerProductVariantsOptions: true,
           },
         },
+      },
+      where: {
+        adminApprovalStatus: "Approved",
       },
     });
 
     return res.status(200).json(products);
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: error.message });
-  }
-};
-
-exports.getProductById = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const product = await prisma.sellerProduct.findUnique({
-      where: {
-        id,
-      },
-      include: {
-        sellerProductVariants: {
-          include: {
-            sellerProductVariantsOptions: true,
-          },
-        },
-      },
-    });
-
-    return res.status(200).json(product);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: error.message });
@@ -113,9 +90,7 @@ exports.getProductBySlug = async (req, res) => {
     const { slug } = req.params;
 
     const product = await prisma.sellerProduct.findUnique({
-      where: {
-        slug,
-      },
+      where: { slug, adminApprovalStatus: "Approved" },
       include: {
         sellerProductVariants: {
           include: {
@@ -132,56 +107,60 @@ exports.getProductBySlug = async (req, res) => {
   }
 };
 
-exports.getProductBySubCategorySlug = async (req, res) => {
+/**
+ * Get products by category slug.
+ * If subCategorySlug is provided, filter by both category and subcategory.
+ */
+exports.getProductsByCategoryAndSubCategory = async (req, res) => {
   try {
-    const { subCategorySlug } = req.params;
+    const { categorySlug, subCategorySlug } = req.params;
 
-    const product = await prisma.sellerProduct.findMany({
-      orderBy: {
-        createdAt: "desc",
-      },
-      where: {
-        subCategoryId: subCategorySlug,
-      },
+    const whereClause = {
+      categoryId: categorySlug, // Ensure category filter is applied
+      adminApprovalStatus: "Approved", // Ensure only approved products are fetched
+    };
+
+    // Only add subCategoryId if subCategorySlug is provided
+    if (subCategorySlug) {
+      Object.assign(whereClause, { subCategoryId: subCategorySlug });
+    }
+
+    const products = await prisma.sellerProduct.findMany({
+      where: whereClause,
+      orderBy: { createdAt: "desc" },
       include: {
         sellerProductVariants: {
-          include: {
-            sellerProductVariantsOptions: true,
-          },
+          include: { sellerProductVariantsOptions: true },
         },
       },
     });
 
-    return res.status(200).json(product);
+    return res.status(200).json(products);
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching products:", error);
     return res.status(500).json({ error: error.message });
   }
 };
 
-exports.getProductByCategorySlug = async (req, res) => {
+exports.getRandomProducts = async (req, res) => {
   try {
-    const { categorySlug } = req.params;
-
-    const product = await prisma.sellerProduct.findMany({
+    const products = await prisma.sellerProduct.findMany({
+      where: {
+        adminApprovalStatus: "Approved",
+      },
       orderBy: {
         createdAt: "desc",
       },
-      where: {
-        categoryId: categorySlug,
-      },
-      include: {
-        sellerProductVariants: {
-          include: {
-            sellerProductVariantsOptions: true,
-          },
-        },
-      },
     });
 
-    return res.status(200).json(product);
+    // Shuffle the fetched products and select 20 randomly
+    const shuffledProducts = products
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 20);
+
+    return res.status(200).json(shuffledProducts);
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching random products:", error);
     return res.status(500).json({ error: error.message });
   }
 };

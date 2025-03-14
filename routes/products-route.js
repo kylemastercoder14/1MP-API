@@ -3,15 +3,20 @@ const productController = require("../controllers/products-controller");
 
 router.post("/", productController.createProduct);
 router.get("/", productController.getAllProducts);
+router.get("/random", productController.getRandomProducts);
 
-// Place these BEFORE the dynamic `/:id` route
-router.get("/categories/:slug", productController.getProductByCategorySlug);
+// Routes for category & subcategory filtering
 router.get(
-  "/sub-categories/:slug",
-  productController.getProductBySubCategorySlug
+  "/categories/:categorySlug",
+  productController.getProductsByCategoryAndSubCategory
+);
+router.get(
+  "/categories/:categorySlug/sub-categories/:subCategorySlug",
+  productController.getProductsByCategoryAndSubCategory
 );
 
+// Routes for product lookup by slug or ID
 router.get("/slug/:slug", productController.getProductBySlug);
-router.get("/:id", productController.getProductById);
+router.get("/:id", productController.getProductBySlug);
 
 module.exports = router;

@@ -72,6 +72,7 @@ exports.getAllProducts = async (req, res) => {
             sellerProductVariantsOptions: true,
           },
         },
+        seller: true
       },
       where: {
         adminApprovalStatus: "Approved",
@@ -97,6 +98,7 @@ exports.getProductBySlug = async (req, res) => {
             sellerProductVariantsOptions: true,
           },
         },
+        seller: true
       },
     });
 
@@ -132,6 +134,7 @@ exports.getProductsByCategoryAndSubCategory = async (req, res) => {
         sellerProductVariants: {
           include: { sellerProductVariantsOptions: true },
         },
+        seller: true
       },
     });
 
@@ -150,6 +153,12 @@ exports.getRandomProducts = async (req, res) => {
       },
       orderBy: {
         createdAt: "desc",
+      },
+      include: {
+        sellerProductVariants: {
+          include: { sellerProductVariantsOptions: true },
+        },
+        seller: true
       },
     });
 

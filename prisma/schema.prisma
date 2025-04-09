@@ -28,6 +28,8 @@ model User {
   reviews          Reviews[]
   order            Order[]
   address          Address[]
+  appointment      Appointment[]
+  followStore      FollowStore[]
 }
 
 model Address {
@@ -190,10 +192,34 @@ model Order {
   addressId String
   address   Address @relation(fields: [addressId], references: [id], onDelete: Cascade)
 
+  sellerId String
+  seller   Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
   orderItem OrderItem[]
 
   @@index([userId])
   @@index([addressId])
+  @@index([sellerId])
+}
+
+model Appointment {
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sellerProductId String
+  sellerProduct   SellerProduct @relation(fields: [sellerProductId], references: [id], onDelete: Cascade)
+  totalAmount     Float
+  paymentStatus   String        @default("Pending")
+  date            String
+  timeSlot        String
+  note            String?
+  paymentMethod   String
+  status          String        @default("Pending") // Pending, Confirmed, Cancelled
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([sellerProductId, date, timeSlot])
+  @@index([userId])
 }
 
 model OrderItem {
@@ -207,10 +233,32 @@ model OrderItem {
   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   productId String
-  product   SellerProduct @relation(fields: [productId], references: [slug], onDelete: Cascade)
+  product   SellerProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
   @@index([productId])
+}
+
+model PageView {
+  id        String   @id @default(cuid())
+  platform  String
+  count     Int      @default(0)
+  ip        String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FollowStore {
+  id        String   @id @default(cuid())
+  userId    String
+  sellerId  String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  seller Seller @relation(fields: [sellerId], references: [id])
+
+  @@unique([userId, sellerId])
+  @@index([sellerId])
 }
 
 // SELLER SCHEMA
@@ -254,6 +302,8 @@ model Seller {
   sellerCoupon      SellerCoupon[]
   sellerBank        SellerBank[]
   sellerPolicies    SellerPolicies[]
+  order             Order[]
+  followStore       FollowStore[]
 
   @@index([categorySlug])
 }
@@ -295,8 +345,8 @@ model SubCategory {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  categorySlug  String
-  category      Category        @relation(fields: [categorySlug], references: [slug], onDelete: Cascade)
+  categorySlug String
+  category     Category @relation(fields: [categorySlug], references: [slug], onDelete: Cascade)
 
   sellerProduct SellerProduct[]
 
@@ -319,9 +369,11 @@ model SellerProduct {
   tags                String[]
   warrantyPeriod      String?
   warrantyPolicy      String?
+  sizeChart           String?
   status              String   @default("In stock")
   adminApprovalStatus String   @default("Pending")
   isVariant           Boolean  @default(false)
+  isFeatured          Boolean  @default(false)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -336,15 +388,19 @@ model SellerProduct {
 
   sellerProductVariants SellerProductVariants[]
 
-  discountId String?
-  discount   SellerDiscount? @relation(fields: [discountId], references: [id], onDelete: Cascade)
-  reviews    Reviews[]
-  orderItem  OrderItem[]
+  discountId  String?
+  discount    SellerDiscount? @relation(fields: [discountId], references: [id], onDelete: Cascade)
+  eventsId    String?
+  events      Events?         @relation(fields: [eventsId], references: [id])
+  reviews     Reviews[]
+  orderItem   OrderItem[]
+  appointment Appointment[]
 
   @@index([sellerId])
   @@index([discountId])
   @@index([subCategoryId])
   @@index([categoryId])
+  @@index([eventsId])
 }
 
 model SellerProductVariants {
@@ -366,7 +422,7 @@ model SellerProductVariantsOptions {
   name      String
   image     String?
   price     Float?
-  stock     Int?
+  status    String   @default("In stock")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -500,4 +556,25 @@ model AdminNotification {
   seller   Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
 
   @@index([sellerId])
+}
+
+model AdminNewsAnnouncements {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  image     String?
+  status    String   @default("Active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Events {
+  id        String   @id @default(cuid())
+  title     String
+  banner    String
+  status    String   @default("Active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products SellerProduct[]
 }
